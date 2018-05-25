@@ -100,9 +100,7 @@ class MailChimp:
 
         return body
 
-    def get_campaign(self,
-                     params={'fields':'campaigns.id,campaigns.settings.title,campaigns.send_time'},
-                     dest='campaigns'):
+    def get_campaign(self,dest='campaigns'):
         """
             This function returns a list of all campign ids associated with the
             apikey.
@@ -115,7 +113,11 @@ class MailChimp:
                 Pandas data frame -
                 campaign_id, send_time, campaign _title
             """
-
+            
+        params={'fields':'campaigns.id,\
+                          campaigns.settings.title,\
+                          campaigns.send_time'}
+        
         r = self.get_json(params=params,dest=dest)
         camps_dict = r[dest][0:]
 
@@ -132,11 +134,7 @@ class MailChimp:
 
         return camp_info
 
-    def get_email_activity(self,camp_ids = [],
-                           params={'offset':0,'count':500,
-                                   'fields':'emails.campaign_id,\
-                                    emails.email_address,'\
-                                   'emails.activity,emails.activity.action'}):
+    def get_email_activity(self,camp_ids = [], count=500,dest='email_activity'):
         """
         This function returns a nested dictionary defined by the input paramaters
         from the URL endpoint.
@@ -152,11 +150,14 @@ class MailChimp:
                 user email and campaing id
 
         """
+        params={'count':count,
+                                   'fields':'emails.campaign_id,\
+                                    emails.email_address,'\
+                                   'emails.activity,emails.activity.action'}
         activity = []
         camp_info = self.get_campaign()
         for i,c in enumerate(camp_ids):
-
-            endpoint = 'https://us17.api.mailchimp.com/3.0/reports/'+c+'/email-activity'
+            endpoint = self.apiroot+c+'/'+dest
             print(endpoint)
             r  = requests.get(endpoint,params=params,
                           auth=('apikey',self.apikey),
@@ -193,11 +194,25 @@ class MailChimp:
         user_activity = pd.concat(activity)
 
         return user_activity
-
-
-    """
-    get email data into a usable dataframe:
-
-    df = pd.DataFrame.from_records(pat)
-    df = pd.concat([df2.drop('activity',axis=1), pd.DataFrame(df2['activity'].tolist())], axis=1)
-    """
+    
+    def get_subscriber(self,count=500, list_id='190ffb16f9'):
+        """ Gets member list stats and other information"""
+        endpoint = parse.urljoin(self.apiroot,'lists/'+list_id+'/members')
+        
+        params = {'count':count,
+                  'fields':'members.id,members.email_address,\
+                   members.unique_email_id,members.status,members.stats,members.email_client,members.location'}
+        
+        r  = requests.get(endpoint,params=params,
+                          auth=('apikey',self.apikey),
+                          verify=True)
+        r = r.json()
+        members = r['members']
+        df = pd.DataFrame(members)
+        member_data = pd.concat([df.drop(['location','stats'],axis=1),
+                       pd.DataFrame(df['location'].tolist()),
+                       pd.DataFrame(df['stats'].tolist())],axis=1)
+        return member_data
+        
+    
+    
