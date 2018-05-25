@@ -11,14 +11,15 @@ import pandas as pd
 
 # sys.path.append(r'..\')
 class MailChimp:
-    def __init__(self,version=3.0):
+    def __init__(self,version=3.0, apikey=None):
         # API key
-        try:
-            f = open(r".\llaves.txt","r+") ##ENTER YOUR KEY HERE
-            apikey = f.read().strip()
-            f.close
-        except FileExistsError:
-            print(FileExistsError)
+        if apikey is None:
+            try:
+                f = open(r".\llaves.txt","r+") ##ENTER YOUR KEY HERE
+                apikey = f.read().strip()
+                f.close
+            except FileExistsError:
+                print(FileExistsError)
 
         parts = apikey.split('-')
 
@@ -156,7 +157,8 @@ class MailChimp:
 
             endpoint = 'https://us17.api.mailchimp.com/3.0/reports/'+c+'/email-activity'
             print(endpoint)
-            r  = requests.get(endpoint,params={'fields':'emails.campaign_id,emails.email_address,'\
+            r  = requests.get(endpoint,params={'offset':0,'count':500,
+                           'fields':'emails.campaign_id,emails.email_address,'\
                            'emails.activity,emails.activity.action'},
                           auth=('apikey',self.apikey), verify=True)
 
