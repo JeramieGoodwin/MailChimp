@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jun 15 15:59:59 2017
-The EDWcon function creates a connection to
-the EDW database.
-
 @author: jeramie.goodwin
 """
 class EDWConnection(object):

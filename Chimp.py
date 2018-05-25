@@ -2,6 +2,10 @@
 """
 Created on Mon May 21 15:22:00 2018
 @author: jeramie.goodwin
+
+TODO:
+* add api key as a parameter in mailchimp
+* add adjustable offsets and limits to get_campaign & get_email_activity
 """
 import sys
 from urllib import parse
@@ -129,14 +133,11 @@ class MailChimp:
         return camp_info
 
     def get_email_activity(self,camp_ids = [],
-                           params={'fields':'emails.campaign_id,emails.email_address,'\
+                           params={'offset':0,'count':500,
+                                   'fields':'emails.campaign_id,\
+                                    emails.email_address,'\
                                    'emails.activity,emails.activity.action'}):
         """
-        TODO:
-            * Calculate time between events
-            *
-            *
-
         This function returns a nested dictionary defined by the input paramaters
         from the URL endpoint.
 
@@ -157,10 +158,9 @@ class MailChimp:
 
             endpoint = 'https://us17.api.mailchimp.com/3.0/reports/'+c+'/email-activity'
             print(endpoint)
-            r  = requests.get(endpoint,params={'offset':0,'count':500,
-                           'fields':'emails.campaign_id,emails.email_address,'\
-                           'emails.activity,emails.activity.action'},
-                          auth=('apikey',self.apikey), verify=True)
+            r  = requests.get(endpoint,params=params,
+                          auth=('apikey',self.apikey),
+                          verify=True)
 
             try:
                 r.raise_for_status()
