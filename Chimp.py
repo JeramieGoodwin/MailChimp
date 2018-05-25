@@ -14,7 +14,7 @@ class MailChimp:
     def __init__(self,version=3.0):
         # API key
         try:
-            f = open(r".\llaves.txt","r+")
+            f = open(r".\llaves.txt","r+") ##ENTER YOUR KEY HERE
             apikey = f.read().strip()
             f.close
         except FileExistsError:
@@ -127,18 +127,23 @@ class MailChimp:
 
         return camp_info
 
-    def get_email_activity(self,camp_ids = None,
+    def get_email_activity(self,camp_ids = [],
                            params={'fields':'emails.campaign_id,emails.email_address,'\
                                    'emails.activity,emails.activity.action'}):
         """
+        TODO:
+            * Calculate time between events
+            *
+            *
+
         This function returns a nested dictionary defined by the input paramaters
         from the URL endpoint.
 
         INPUT:
                 apikey {str} = MailChimp user key
                 params {dict} = Query parameters and fields passed to the API call
-                camp_ids {tuple} = List of string-formated campaign ids returned
-                                    from the get_campaign() function
+                camp_ids {tuple} = List of campaign ids returned
+                                    from the get_campaign() function OR a Series
 
         OUTPUT:
                 user_activity = Pandas dataframe of user activity organized by
@@ -146,13 +151,14 @@ class MailChimp:
 
         """
         activity = []
-
+        camp_info = self.get_campaign()
         for i,c in enumerate(camp_ids):
 
             endpoint = 'https://us17.api.mailchimp.com/3.0/reports/'+c+'/email-activity'
             print(endpoint)
-            r  = requests.get(endpoint, params=params,
-                                  auth=('apikey',self.apikey), verify=True)
+            r  = requests.get(endpoint,params={'fields':'emails.campaign_id,emails.email_address,'\
+                           'emails.activity,emails.activity.action'},
+                          auth=('apikey',self.apikey), verify=True)
 
             try:
                 r.raise_for_status()
@@ -169,14 +175,20 @@ class MailChimp:
             emails = r['emails']
 
             for j,user in enumerate(emails):
-                df = pd.DataFrame.from_records(user)
-                df = pd.concat([df.drop('activity', axis=1),
-                                pd.DataFrame(df['activity'].tolist())], axis=1)
+                if len(user['activity']) == 0:
+                    df = pd.DataFrame(
+                            {'action':'none',
+                             'campaign_id':user['campaign_id'],
+                             'email_address':user['email_address'],
+                             'ip':' ',
+                             'timestamp':camp_info['send_time'][i]}, index=[0])
+
+                else:
+                    df = pd.DataFrame.from_records(user)
+                    df = pd.concat([df.drop('activity', axis=1),pd.DataFrame(df['activity'].tolist())], axis=1)
 
                 activity.append(df)
-
         user_activity = pd.concat(activity)
-        user_activity.set_index(['campaign_id', 'email_address'])
 
         return user_activity
 
